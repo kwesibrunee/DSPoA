@@ -62,3 +62,4 @@ In order to use this setup you will need to adjust:
 * update all initialize.cfg files update_radio.sh with RW username and unencrypted password to update the radio
 * update initialize.sh with the DHCP server ip for Clients to connect to. 
 * update SETUP_DHCPD file with values for your network.
+* copy Ubiquiti folder to your tftp directory typically /tftpboot/
