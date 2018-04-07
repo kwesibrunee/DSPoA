@@ -1,0 +1,139 @@
+# replace these values with your values.
+#SUBNETRADIOS=10.250.0.0
+#MASKRADIOS=255.255.255.0
+#GATEWAYRADIOS=10.250.0.1
+#UNMODIFIEDRADIOSSTART=10.250.0.10
+#UNMODIFIEDRADIOSEND=10.250.0.100
+#MODIFIEDRADIOSTART=10.250.0.101
+#MODIFIEDRADIOEND=10.250.0.254
+#SUBNETDHCPRADIOS=192.168.3.0
+#MASKDHCPRADIOS=255.255.255.0
+#TFTPSERVER=192.168.3.10
+
+#SUBNETCLIENTS=192.168.105.0
+#MASKCLIENTS=255.255.255.0
+#GATEWAYCLIENTS=192.168.105.1
+#CLIENTSSTART=192.168.105.2
+#CLIENTSEND=192.168.105.254
+#SUBNETDHCPCLIENTS=192.168.2.0
+#MASKDHCPCLIENTS=255.255.255.0
+#DNSSERVERS=192.168.2.10
+
+# OMAPI key must be generated using OPENSSL to be used
+OMAPIKEY=somestring
+
+# DHCPD CONFIG
+
+# GLOBAL PARAMS
+# Omapi Settings needed for OMSHELL or OMCMD usage
+omapi-port 9992;
+key omapi_key {
+        algorithm HMAC-MD5;
+        secret "$OMAPIKEY";
+};
+omapi-key omapi_key;
+one-lease-per-client                                    true;
+deny duplicates;
+
+# Remember Agent info
+stash-agent-options on;
+
+# Lease Times can be overridden in shared-network / subnet declarations
+default-lease-time 604800;
+max-lease-time 604800;
+min-lease-time 302400;
+
+# Ubiquiti Radio Class - matches only modified radios
+class "Ubiquiti" {
+    match if (substring(option vendor-class-identifier,0,8) = "Ubiquiti");
+    spawn with hardware;
+}
+# match unmodified radios
+class "StockUbiquiti" {
+    match if (substring(option vendor-class-identifier,0,5) = "udhcp");
+    spawn with hardware;
+}
+
+# Bandwidth SpeedTiers add as needed
+group SpeedTier1 {
+    set speed = "SpeedTier1";
+}
+group SpeedTier2 {
+    set speed = "SpeedTier2";
+}
+
+# Radios shared network 
+shared-network RADIOS {
+    # Subnet for Radios 
+    subnet $SUBNETRADIOS mask $MASKRADIOS {
+        option subnet-mask $MASKRADIOS;
+        option routers $GATEWAYRADIOS;
+        use-host-decl-names on;
+        # Pool for modified radios
+        pool {
+            # only allow radios which have host decls
+            allow known-clients;
+            deny unknown-clients;
+            next-server $TFTPSERVER;
+            # add TFTP server and Filename
+            option tftp-server-name "$TFTPSERVER";
+            set ubntfile = concat(speed, ".cfg");
+            filename = ubntfile;
+            option bootfile-name = ubntfile;
+            # Only allow Modified radios here
+            allow members of "Ubiquiti";
+            deny members of "StockUbiquiti";
+            range $MODIFIEDRADIOSSTART $MODIFIEDRADIOSSTART;
+            # note absence of DNS servers this is important
+        }
+        # pool for unmodified radios
+        pool {
+            range $UNMODIFIEDRADIOSSTART $UNMODIFIEDRADIOSSTART;
+            allow unknown-clients;
+            allow known-clients;
+            allow members of "StockUbiquiti";
+            deny members of "Ubiquiti";
+            default-lease-time 30;
+            max-lease-time 560;
+            min-lease-time 230;
+            on commit {
+                set clip = binary-to-ascii(10, 8, ".", leased-address);
+                log(info, concat("attempting update of radio ", clip));
+                execute("/var/lib/dhcpd/schedule_update.sh", clip);
+            }
+        }
+    }
+    # Subnet of interface on DHCP Server assigned to RADIOS
+    subnet $SUBNETDHCPRADIOS mask $MASKDHCPRADIOS {
+        # Purposely empty just here to listen on this interface
+    }
+}
+
+# Shared network for CLIENTS 
+shared-network CLIENTS {
+    # subnet for customer devices
+    subnet $SUBNETCLIENTS mask $MASKCLIENTS {
+        option routers $GATEWAYCLIENTS;
+        pool {
+            range $CLIENTSSTART $CLIENTSEND;
+            allow unknown-clients;
+            allow known-clients;
+            deny members of "Ubiquiti";
+            option domain-name-servers $DNSSERVERS;
+        }
+    }
+    # Subnet of interface on DHCP Server assigned to CLIENTS
+    subnet $SUBNETDHCPCLIENTS mask $MASKDHCPCLIENTS {
+        # Purposely empty just want to listen on this subnet
+    }
+}
+
+# Host entries for radios only typically added via OMCMD or OMSHELL but could be added manually
+
+# as long as Hostname is a valid hostname i.e. starts with a letter and contains only [a-zA-Z0-9\-]
+# will be assigned to radio during dhcp session, this is what shows up in the AP as the connecting device 
+# and in UNMS as the device name.
+host Hostname {
+    hardware ethernet 00:1d:ce:0d:99:6d;
+    group "SpeedTier2";
+}
