@@ -56,10 +56,12 @@ In order to use this setup you will need to adjust:
 
 * VLAN settings to match your network in the initialize.cfg file for each architecture (netconf.4.devname, bridge.2.port.1.devname, ebtables.sys.arpnat.2.devname, ebtables.sys.vlan.1.id, vlan.1.id)
 * update all initialize.cfg files UNMS key with yours (unms.uri)
+* create a SSH public/private key see OPENSSH docs for instructions
 * update all initialize.cfg files ssh public key with yours (sshd.auth.key.1.value)
 * update all initialize.cfg files RO username, password with yours (users.2.name, users.2.password (encrypted, grab from existing radio config))
 * update all initialize.cfg files RW username, password with yours (users.2.name, users.2.password (encrypted, grab from existing radio config))
 * update all initialize.cfg files update_radio.sh with RW username and unencrypted password to update the radio
 * update initialize.sh with the DHCP server ip for Clients to connect to. 
-* update SETUP_DHCPD file with values for your network.
+* update SETUP_DHCPD file with values for your network. Copy relevant config to dhcpd config file.
 * copy Ubiquiti folder to your tftp directory typically /tftpboot/
+* optionally create a key for OMAPI use to dhcpd look online for a tutorial
