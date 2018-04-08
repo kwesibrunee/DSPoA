@@ -1,11 +1,11 @@
 Docsis Style Provisioning over AirMax
 
-Using this provisioning method, will allow you to control whether radios will pass customer traffic, based on how they are added to the dhcp server. The motivation for this setup is to make provisioning AirMax radios similar to provisioning a Docsis CM, as that is what I am most familiar with.
+Using this provisioning method, will allow you to control whether PTMP stations will pass customer traffic, based on how they are added to the dhcp server. The motivation for this setup is to make provisioning AirMax radios similar to provisioning a Docsis CM, as that is what I am most familiar with.
 
 Goals / Features
 
 * Provision customer radios using only DHCP
-* Works with M and AC radios (tested with 8.5.1-cs and 6.1.6-cs)
+* Works with M and AC radios (tested with 8.5.1-cs and 6.1.6-cs).
 * Installer only needs to concern himself with getting the radio talking to AP, all other settings are applied when he sets the management interface to dhcp
 * Standardize the config using templates at intial setup and during each dhcp renew (speeds only)
 * Secure SSH (Certificate based SSH only)
@@ -34,6 +34,7 @@ Caveats
 * does not use Option 82 built into the firmware, so gui will always show it disabled though it is actually enabled.
 * SSH to the radios will only be possible from devices that have the private key that corresponds to the public key in the config 
 * WDS must be enabled on M radios for dhcp-fwd to work.
+* I only had access to litebeam ACs (Gen 1 and Gen 2) and Nanostation Loco M5s to test with. May need additional parameters for other radios.
 
 
 Procedural overview
